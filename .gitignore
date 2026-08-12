@@ -1,0 +1,24 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.venv/
+venv/
+.env
+.env.*
+# 템플릿(실제 키 없음)은 예외 — 위 .env.* 패턴에 안 걸리게. gitignore는 패턴과
+# 같은 줄에 붙는 트레일링 주석을 지원하지 않는다(그러면 그 줄 전체가 주석이 아니라
+# 리터럴 패턴으로 취급돼 아무 파일과도 안 매칭됨) — 그래서 주석은 항상 별도 줄로 둔다.
+!.env.example
+*.log
+# 저장된 인터뷰 세션 로그 (개인 데이터)
+sessions/
+# 실제 녹음 콘텐츠 포함(저작권/출처 불분명) — sessions/와 같은 이유
+audio/
+.DS_Store
+.idea/
+.vscode/
+
+# 설계/개발 과정 문서 — 공개 저장소에는 안 올림(사용자 요청). 로컬에는 그대로 남음.
+CLAUDE.md
+docs/

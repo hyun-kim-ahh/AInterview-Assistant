@@ -1,0 +1,499 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="top-bar">
+  <span class="domain">{{ state.schema.domain }}</span>
+  {% if not state.schema.items %}
+    <span class="no-schema-badge">자유 형식 · 스키마 없음</span>
+  {% endif %}
+  <span class="status">{% if state.ended %}● 인터뷰 종료{% else %}● 진행 중{% endif %}{% if state.exhausted %} · 전사 끝{% endif %}</span>
+  <span class="elapsed" id="elapsed-timer">경과 {{ elapsed | format_elapsed }}</span>
+  {% if state.ended %}
+    <a href="{{ url_for('session_detail', session_id=state.session_context.session_id) }}" class="view-report-link">정리 문서 보기 →</a>
+  {% endif %}
+</div>
+
+{% if state.input_mode == 'audio_file' %}
+  <div class="audio-player-bar">
+    <audio id="session-audio" controls preload="auto" src="{{ url_for('session_audio') }}"></audio>
+    <span id="audio-autoplay-hint" class="audio-autoplay-hint" style="display: none">
+      🔇 자동재생 정책으로 무음 시작됨 — 위 컨트롤에서 소리를 켜주세요
+    </span>
+  </div>
+{% endif %}
+
+<div class="main">
+  <div class="transcript-pane" id="transcript-pane">
+    {% for event in state.transcript_log %}
+      <p class="turn{% if loop.last %} recent{% endif %}" data-turn-id="{{ event.turn_id }}" data-text="{{ event.text }}">
+        <span class="turn-id">[{{ event.turn_id }} · {{ event.speaker.value if event.speaker else "?" }}]</span>
+        <span class="turn-text">{{ event.text }}</span>
+        {% if event.corrected %}<span class="corrected-badge" title="전사 교정됨">✎</span>{% endif %}
+      </p>
+    {% else %}
+      {% if state.auto_ingest %}
+        <p class="empty">아직 전사된 턴이 없습니다 — 자동으로 진행됩니다.</p>
+      {% else %}
+        <p class="empty">아직 전사된 턴이 없습니다 — "다음 턴"을 눌러 시작하세요.</p>
+      {% endif %}
+    {% endfor %}
+    {% if state.exhausted %}
+      <p class="empty">(전사 끝 — 추천 질문을 보거나 새 세션을 시작하세요)</p>
+    {% endif %}
+  </div>
+
+  <div class="structure-pane" id="structure-panel">
+    <h2>정리</h2>
+    <div class="badges">
+      <span class="availability-badge">{{ gap_count }}건 대기</span>
+      {% if contradiction_count %}
+        <span class="contradiction-count">⚠ 모순 {{ contradiction_count }}건</span>
+      {% endif %}
+    </div>
+    {% if state.summarizing %}
+      <div class="overview-box summarizing-box">⏳ 종합 정리 작성 중...</div>
+    {% elif state.structurer.state.overview %}
+      <div class="overview-box">
+        <h3>종합 정리</h3>
+        <div class="overview-content">{{ state.structurer.state.overview | markdown | safe }}</div>
+      </div>
+    {% endif %}
+    {% if state.structurer.state.schema_items %}
+      <ul class="structure-item-list">
+        {% for item in state.structurer.state.schema_items %}
+          <li class="structure-item status-{{ item.status.value }}">
+            <div class="structure-item-header">
+              <span class="item-label">{{ item.label }}</span>
+              <span class="status-badge">{{ item.status.value }}</span>
+              {% if item.contradictions %}<span class="item-contradiction-badge">⚠ 모순</span>{% endif %}
+            </div>
+            {% if item.summary %}
+              <div class="item-summary">{{ item.summary | markdown | safe }}</div>
+            {% else %}
+              <p class="empty">아직 내용 없음</p>
+            {% endif %}
+            {% for contra in item.contradictions %}
+              <p class="contradiction-note">⚠ {{ contra.with_ref }}와 상충 — {{ contra.note }}</p>
+            {% endfor %}
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="empty">아직 정리된 내용이 없습니다.</p>
+    {% endif %}
+  </div>
+
+  <div class="question-pane" id="question-pane">
+    <div class="question-pane-header">
+      <div class="question-pane-title">
+        <h2>추천 질문</h2>
+        <form method="post" action="{{ url_for('ask') }}" class="inline-form" id="ask-form">
+          <button type="submit" id="ask-button">추천 질문 생성</button>
+        </form>
+      </div>
+      <button type="button" id="toggle-kept-btn">킵한 질문 ({{ state.kept_questions | length }})</button>
+    </div>
+    <div id="kept-questions-panel" class="kept-questions-panel" style="display: none">
+      {% if state.kept_questions %}
+        <ul class="kept-questions-list">
+          {% for k in state.kept_questions %}
+            <li class="kept-question-item type-{{ k.question_type.value }}">
+              <span class="card-type">{{ k.question_type.value }}</span>
+              {{ k.edited_text if k.action.value == 'edited' else k.question_text }}
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="empty">아직 킵한 질문이 없습니다.</p>
+      {% endif %}
+    </div>
+    <div id="candidate-cards">
+      {% if state.latest_candidates %}
+        {% for c in state.latest_candidates.candidates %}
+          <div class="card{{ ' card-flash' if candidates_are_new else '' }} type-{{ c.type.value }}">
+            <span class="card-type">{{ c.type.value }}</span>
+            <form method="post" action="{{ url_for('adopt_question') }}" class="card-form">
+              <input type="hidden" name="question_type" value="{{ c.type.value }}">
+              <input type="hidden" name="target_item" value="{{ c.target_item or '' }}">
+              <input type="hidden" name="original_text" value="{{ c.text }}">
+              <textarea name="text" rows="2">{{ c.text }}</textarea>
+              <div class="card-actions">
+                <button type="submit">채택</button>
+              </div>
+            </form>
+          </div>
+        {% endfor %}
+      {% else %}
+        <p class="empty">아직 추천 질문이 없습니다 — "추천 질문 생성"을 눌러보세요.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="bottom-bar">
+  {% if state.auto_ingest %}
+    <span class="auto-ingest-status">
+      {% if state.ended %}● 입력 중지됨(인터뷰 종료){% else %}● 자동 진행 중(오디오 파일/실시간 마이크){% endif %}
+    </span>
+  {% else %}
+    <form method="post" action="{{ url_for('next_turn') }}" class="inline-form">
+      <button type="submit" id="next-turn-button" {% if state.exhausted or state.ended %}disabled{% endif %}>다음 턴</button>
+    </form>
+  {% endif %}
+  <form method="post" action="{{ url_for('end_interview') }}" class="inline-form" id="end-form"
+        onsubmit="return confirm('인터뷰를 종료할까요? 더 이상 새 발화가 들어오지 않습니다.');">
+    <button type="submit" id="end-button" {% if state.ended %}disabled{% endif %}>
+      {{ '인터뷰 종료됨' if state.ended else '인터뷰 종료' }}
+    </button>
+  </form>
+  <form method="post" action="{{ url_for('new_session') }}" class="inline-form">
+    <button type="submit">새 세션 시작</button>
+  </form>
+</div>
+
+<script>
+  document.addEventListener("keydown", function (e) {
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+      e.preventDefault();
+      // .submit()은 스펙상 submit 이벤트를 안 띄운다 — 아래 ask-form의 fetch
+      // 가로채기(preventDefault 기반)를 타게 하려면 requestSubmit()을 써야 한다.
+      document.getElementById("ask-form").requestSubmit();
+    }
+  });
+  var pane = document.getElementById("transcript-pane");
+  if (pane) { pane.scrollTop = pane.scrollHeight; }
+
+  // ── 추천 질문 카드의 텍스트 박스 — 질문 길이에 맞춰 높이 자동 조절 ──
+  function autoSizeTextarea(el) {
+    el.style.height = "auto";
+    el.style.height = el.scrollHeight + "px";
+  }
+  document.querySelectorAll(".card-form textarea").forEach(function (ta) {
+    autoSizeTextarea(ta);
+    ta.addEventListener("input", function () { autoSizeTextarea(ta); });
+  });
+
+  // ── 추천 질문 생성 버튼 — 누르는 순간 실제로 LLM을 호출하므로(1~수 초) 즉시
+  // 비활성화 + 라벨을 바꾼다. (2026-08-11 추가) 이전엔 순수 POST/redirect라 전체
+  // 페이지가 다시 그려지면서 audio_file 모드의 <audio> 태그가 매번 재생성돼
+  // 재생이 끊기는 문제가 있었음 — preventDefault + fetch로 바꿔 페이지 리로드
+  // 없이 구조화/질문 패널만 innerHTML로 갱신한다(/status 폴링이 쓰는 것과 같은
+  // rebuildStructurePanel/rebuildQuestionPanel을 그대로 재사용). 페이지가 안
+  // 새로고침되므로 버튼 상태도 직접 복원해야 한다(성공/실패 둘 다).
+  var askForm = document.getElementById("ask-form");
+  if (askForm) {
+    askForm.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var askButton = document.getElementById("ask-button");
+      askButton.disabled = true;
+      askButton.textContent = "생성 중...";
+      fetch("/ask", { method: "POST" })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          rebuildStructurePanel(data);
+          // flash: false — 버튼 클릭 결과는 반짝이지 않는다(배경 자동 트리거로
+          // 조용히 나타난 경우만 눈에 띄게 하는 기존 원칙 유지).
+          rebuildQuestionPanel(data, { flash: false });
+        })
+        .catch(function () {})
+        .then(function () {
+          askButton.disabled = false;
+          askButton.textContent = "추천 질문 생성";
+        });
+    });
+  }
+
+  // ── 인터뷰 종료 버튼 — confirm() 통과 후 제출되면 같은 이유(LLM 호출)로 즉시 비활성화.
+  var endForm = document.getElementById("end-form");
+  if (endForm) {
+    endForm.addEventListener("submit", function (e) {
+      if (e.defaultPrevented) return;  // confirm()에서 취소하면 여기까지 안 옴
+      var endButton = document.getElementById("end-button");
+      endButton.disabled = true;
+      endButton.textContent = "종료 처리 중...";
+    });
+  }
+
+  // ── 경과 시간 실시간 타이머 — 서버 왕복 없이 클라이언트 시계로 계산 ──
+  var SESSION_STARTED_AT_MS = {{ (state.started_at.timestamp() * 1000) | round | int }};
+
+  function formatElapsed(seconds) {
+    var minutes = Math.floor(seconds / 60);
+    var secs = seconds % 60;
+    return minutes ? (minutes + "분 " + secs + "초") : (secs + "초");
+  }
+
+  function updateElapsedTimer() {
+    var seconds = Math.floor((Date.now() - SESSION_STARTED_AT_MS) / 1000);
+    var el = document.getElementById("elapsed-timer");
+    if (el) el.textContent = "경과 " + formatElapsed(seconds);
+  }
+  updateElapsedTimer();
+  setInterval(updateElapsedTimer, 1000);
+
+  // ── audio_file 모드 — 세션 시작 경과 시간에 맞춰 오디오를 재생 ──
+  // _ingestion_loop의 전사 페이싱도 같은 기준(세션 시작 이후 경과 시간)으로 돌아가므로,
+  // 페이지가 뜬 시점에 오디오를 바로 재생하면 자연히 맞물린다. 새로고침 시에는
+  // currentTime을 경과 시간으로 seek해 다시 맞춤. 소리 있는 autoplay는 브라우저
+  // 정책상 막힐 수 있어 실패하면 무음으로 재시도(항상 허용됨) 후 안내를 보여준다.
+  // (2026-08-11 추가) 인터뷰가 이미 종료됐으면(state.ended) 이 블록 자체를
+  // 건너뛴다 — "채택"/"인터뷰 종료" 등 여전히 전체 페이지를 다시 그리는 액션이
+  // 있는데, 종료 후엔 더 이상 실시간으로 맞출 대상(전사)이 없어 경과 시간
+  // 기준 seek+재생이 의미가 없을 뿐 아니라, 사용자가 종료 직전 직접 멈춘
+  // 오디오를 리로드마다 강제로 다시 재생시켜버리는 문제가 있었다. 이제
+  // 종료 후엔 <audio controls>가 사용자가 마지막으로 둔 상태 그대로 유지된다.
+  var sessionAudio = document.getElementById("session-audio");
+  var sessionEnded = {{ state.ended | tojson }};
+  if (sessionAudio && !sessionEnded) {
+    sessionAudio.currentTime = Math.max(0, (Date.now() - SESSION_STARTED_AT_MS) / 1000);
+    sessionAudio.play().catch(function () {
+      sessionAudio.muted = true;
+      sessionAudio.play().catch(function () {});
+      var hint = document.getElementById("audio-autoplay-hint");
+      if (hint) hint.style.display = "inline";
+    });
+  }
+
+  // ── /status 폴링으로 전사·구조화·추천 질문 상태 자동 갱신 ──
+  // 추천 질문(_question_loop 배경 트리거)도 이제 여기서 같이 다룬다 — 판단이 통과해서
+  // latest_candidates가 배경에서 갱신돼도, 버튼을 안 눌러도 화면에 반영되게.
+  var lastTurnCount = {{ state.transcript_log | length }};
+  var lastCandidatesGeneratedAt = {{ (state.latest_candidates.generated_at if state.latest_candidates else none) | tojson }};
+
+  function syncTranscriptTurns(turns) {
+    // 새로 늘어난 턴만 추가하는 게 아니라, 이미 그려진 턴 중 텍스트가 바뀐 것도
+    // (전사 교정) 찾아서 그 자리에서 다시 그린다 — 리로드 없이도 교정이 바로 보이게.
+    var emptyMsg = pane.querySelector(".empty");
+    if (emptyMsg) emptyMsg.remove();
+
+    turns.forEach(function (t) {
+      var el = pane.querySelector('.turn[data-turn-id="' + t.turn_id + '"]');
+      if (el) {
+        if (el.dataset.text !== t.text) {
+          el.dataset.text = t.text;
+          el.querySelector(".turn-text").textContent = t.text;
+          if (t.corrected && !el.querySelector(".corrected-badge")) {
+            var badge = document.createElement("span");
+            badge.className = "corrected-badge";
+            badge.title = "전사 교정됨";
+            badge.textContent = "✎";
+            el.appendChild(badge);
+          }
+        }
+        return;
+      }
+      var p = document.createElement("p");
+      p.className = "turn";
+      p.dataset.turnId = t.turn_id;
+      p.dataset.text = t.text;
+      var idSpan = document.createElement("span");
+      idSpan.className = "turn-id";
+      idSpan.textContent = "[" + t.turn_id + " · " + (t.speaker || "?") + "]";
+      var textSpan = document.createElement("span");
+      textSpan.className = "turn-text";
+      textSpan.textContent = t.text;
+      p.appendChild(idSpan);
+      p.appendChild(document.createTextNode(" "));
+      p.appendChild(textSpan);
+      if (t.corrected) {
+        var newBadge = document.createElement("span");
+        newBadge.className = "corrected-badge";
+        newBadge.title = "전사 교정됨";
+        newBadge.textContent = "✎";
+        p.appendChild(newBadge);
+      }
+      pane.appendChild(p);
+    });
+
+    var allTurns = pane.querySelectorAll(".turn");
+    allTurns.forEach(function (el) { el.classList.remove("recent"); });
+    if (allTurns.length) allTurns[allTurns.length - 1].classList.add("recent");
+
+    pane.scrollTop = pane.scrollHeight;
+    lastTurnCount = turns.length;
+  }
+
+  function rebuildStructurePanel(data) {
+    var panel = document.getElementById("structure-panel");
+    if (!panel) return;
+    var s = data.structured_state;
+    var html = '<h2>정리</h2><div class="badges"><span class="availability-badge">' + data.gap_count + '건 대기</span>';
+    if (data.contradiction_count) {
+      html += '<span class="contradiction-count">⚠ 모순 ' + data.contradiction_count + '건</span>';
+    }
+    html += '</div>';
+    if (data.summarizing) {
+      html += '<div class="overview-box summarizing-box">⏳ 종합 정리 작성 중...</div>';
+    } else if (s.overview_html) {
+      html += '<div class="overview-box"><h3>종합 정리</h3><div class="overview-content">' +
+        s.overview_html + '</div></div>';
+    }
+    if (s.schema_items.length) {
+      html += '<ul class="structure-item-list">';
+      s.schema_items.forEach(function (item) {
+        html += '<li class="structure-item status-' + item.status + '">' +
+          '<div class="structure-item-header">' +
+          '<span class="item-label">' + item.label + '</span>' +
+          '<span class="status-badge">' + item.status + '</span>' +
+          (item.contradictions.length ? '<span class="item-contradiction-badge">⚠ 모순</span>' : '') +
+          '</div>';
+        if (item.summary_html) {
+          html += '<div class="item-summary">' + item.summary_html + '</div>';
+        } else {
+          html += '<p class="empty">아직 내용 없음</p>';
+        }
+        item.contradictions.forEach(function (contra) {
+          html += '<p class="contradiction-note">⚠ ' + contra.with_ref + '와 상충 — ' + contra.note + '</p>';
+        });
+        html += '</li>';
+      });
+      html += '</ul>';
+    } else {
+      html += '<p class="empty">아직 정리된 내용이 없습니다.</p>';
+    }
+    panel.innerHTML = html;
+  }
+
+  // rebuildStructurePanel은 읽기 전용 텍스트만 다뤄 이스케이프 없이도 안전했지만,
+  // 카드는 LLM이 만든 질문 텍스트를 hidden input value/textarea 안에 직접 꽂아야 해서
+  // "나 <가 섞이면 폼 자체가 깨질 수 있다(스타일이 아니라 기능 버그) — 이스케이프 필요.
+  function escapeHtml(str) {
+    return str
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
+  function rebuildQuestionPanel(data, opts) {
+    var panel = document.getElementById("candidate-cards");
+    if (!panel) return;
+    // 사용자가 카드 텍스트박스를 고치는 중이면 이번 틱은 건너뛴다 — 배경 생성이
+    // 10초마다 돌면서 막 채택하려던 편집 내용을 지워버리지 않게 (kept_questions를
+    // latest_candidates 재생성과 분리해 지켰던 것과 같은 취지).
+    if (panel.contains(document.activeElement)) return;
+
+    // 기본은 반짝임(폴링/배경 트리거 경로) — "추천 질문 생성" 버튼 클릭 결과만
+    // {flash: false}로 넘겨 반짝이지 않게 한다(기존 원칙 유지).
+    var flash = !opts || opts.flash !== false;
+
+    var c = data.candidates;
+    var newGeneratedAt = c ? c.generated_at : null;
+    // 실제로 새로 생성된 배치일 때만 다시 그린다 — 매 2초 폴링마다 같은 내용을
+    // 통째로 재조립하면 낭비고, 아래 카드 등장 애니메이션(card-flash)도 매번
+    // 재생돼버려 "한 번만 반짝"이 아니게 된다.
+    if (newGeneratedAt === lastCandidatesGeneratedAt) return;
+    lastCandidatesGeneratedAt = newGeneratedAt;
+
+    var html;
+    if (c && c.candidates.length) {
+      html = c.candidates.map(function (cand) {
+        var text = escapeHtml(cand.text);
+        var targetItem = escapeHtml(cand.target_item);
+        return '<div class="card' + (flash ? ' card-flash' : '') + ' type-' + cand.type + '">' +
+          '<span class="card-type">' + cand.type + '</span>' +
+          '<form method="post" action="/adopt" class="card-form">' +
+          '<input type="hidden" name="question_type" value="' + cand.type + '">' +
+          '<input type="hidden" name="target_item" value="' + targetItem + '">' +
+          '<input type="hidden" name="original_text" value="' + text + '">' +
+          '<textarea name="text" rows="2">' + text + '</textarea>' +
+          '<div class="card-actions"><button type="submit">채택</button></div>' +
+          '</form></div>';
+      }).join("");
+    } else {
+      html = '<p class="empty">아직 추천 질문이 없습니다 — "추천 질문 생성"을 눌러보세요.</p>';
+    }
+    panel.innerHTML = html;
+
+    panel.querySelectorAll(".card-form textarea").forEach(function (ta) {
+      autoSizeTextarea(ta);
+      ta.addEventListener("input", function () { autoSizeTextarea(ta); });
+    });
+  }
+
+  // ── 킵한 질문 토글 ──
+  var toggleKeptBtn = document.getElementById("toggle-kept-btn");
+  var keptPanel = document.getElementById("kept-questions-panel");
+  if (toggleKeptBtn && keptPanel) {
+    toggleKeptBtn.addEventListener("click", function () {
+      keptPanel.style.display = keptPanel.style.display === "none" ? "block" : "none";
+    });
+  }
+
+  // (2026-08-11 추가) "킵한 질문" 배지/목록을 페이지 리로드 없이 갱신 — /adopt를
+  // fetch로 바꾸면서 필요해짐(아래 .card-form submit 가로채기 참고). /status 폴링도
+  // 같은 데이터를 받으므로 이 함수를 그대로 재사용한다.
+  function rebuildKeptQuestionsPanel(data) {
+    if (toggleKeptBtn) toggleKeptBtn.textContent = "킵한 질문 (" + data.kept_questions.length + ")";
+    if (!keptPanel) return;
+    var html;
+    if (data.kept_questions.length) {
+      html = "<ul class=\"kept-questions-list\">" + data.kept_questions.map(function (k) {
+        return '<li class="kept-question-item type-' + k.question_type + '">' +
+          '<span class="card-type">' + k.question_type + '</span>' +
+          escapeHtml(k.text) +
+          '</li>';
+      }).join("") + "</ul>";
+    } else {
+      html = '<p class="empty">아직 킵한 질문이 없습니다.</p>';
+    }
+    keptPanel.innerHTML = html;
+  }
+
+  // (2026-08-11 추가) "채택" 버튼 — 이전엔 순수 POST/redirect라 전체 페이지가
+  // 다시 그려지면서 audio_file 모드의 <audio> 태그가 재생성돼 재생이 끊기는
+  // 문제가 있었음(/ask와 같은 원인). .card-form은 SSR 카드뿐 아니라
+  // rebuildQuestionPanel이 매번 새로 그리는 카드에도 계속 생기므로, 각 폼에
+  // 개별로 리스너를 다는 대신 document 레벨에서 이벤트 위임으로 한 번만 건다.
+  document.addEventListener("submit", function (e) {
+    var form = e.target;
+    if (!form.classList || !form.classList.contains("card-form")) return;
+    e.preventDefault();
+    var button = form.querySelector("button[type=submit]");
+    var card = form.closest(".card");
+    if (button) { button.disabled = true; button.textContent = "채택 중..."; }
+    fetch("/adopt", { method: "POST", body: new FormData(form) })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        rebuildKeptQuestionsPanel(data);
+        // 페이지 리로드가 없어져서(2026-08-11) 카드에 직접 짧은 시각 효과를
+        // 줘야 "킵한 질문" 패널을 따로 열지 않아도 채택됐는지 바로 보인다.
+        if (card) {
+          card.classList.remove("card-adopted-flash");
+          void card.offsetWidth;  // 리플로우 강제 — 같은 카드를 연속으로 채택해도 애니메이션이 다시 재생되게
+          card.classList.add("card-adopted-flash");
+        }
+        if (button) {
+          button.disabled = false;
+          button.textContent = "채택됨 ✓";
+          setTimeout(function () { button.textContent = "채택"; }, 1200);
+        }
+      })
+      .catch(function () {
+        if (button) { button.disabled = false; button.textContent = "채택"; }
+      });
+  });
+
+  function pollStatus() {
+    fetch("/status").then(function (r) { return r.json(); }).then(function (data) {
+      if (!data.active) {
+        location.reload();
+        return;
+      }
+
+      syncTranscriptTurns(data.transcript);
+
+      var statusEl = document.querySelector(".status");
+      if (statusEl) statusEl.textContent = "● 진행 중" + (data.exhausted ? " · 전사 끝" : "");
+
+      var nextBtn = document.getElementById("next-turn-button");
+      if (nextBtn) nextBtn.disabled = data.exhausted;
+
+      rebuildStructurePanel(data);
+      rebuildQuestionPanel(data);
+      rebuildKeptQuestionsPanel(data);
+    });
+  }
+  setInterval(pollStatus, 2000);
+</script>
+{% endblock %}

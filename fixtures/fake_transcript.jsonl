@@ -1,0 +1,10 @@
+{"speaker": "interviewer", "text": "로스팅을 언제 멈춰야 할지는 어떻게 판단하세요?", "timestamp": 5.0, "turn_id": "t001"}
+{"speaker": "expert", "text": "기본적으로 2차 크랙 소리를 듣죠. 근데 사실 소리보다 향이 먼저예요. 단내가 확 올라오는 순간이 있어요.", "timestamp": 12.0, "turn_id": "t002"}
+{"speaker": "interviewer", "text": "타이머는 안 보세요?", "timestamp": 25.0, "turn_id": "t003"}
+{"speaker": "expert", "text": "참고는 하는데 절대 기준은 아니에요. 시간만 믿으면 망해요. 매번 조건이 다르니까.", "timestamp": 30.0, "turn_id": "t004"}
+{"speaker": "interviewer", "text": "생두를 고를 때는 뭘 보세요?", "timestamp": 48.0, "turn_id": "t005"}
+{"speaker": "expert", "text": "색 균일도랑 크기요. 근데 등급 높다고 무조건 사진 않아요. 수분 함량이 애매하면 아무리 스펙 좋아도 뺍니다.", "timestamp": 55.0, "turn_id": "t006"}
+{"speaker": "interviewer", "text": "결과가 별로일 때 원인은 어떻게 찾으세요?", "timestamp": 78.0, "turn_id": "t007"}
+{"speaker": "expert", "text": "맛부터 봐요. 쓴맛이 강하면 대개 후반부를 너무 끌었다는 신호고, 풋내가 나면 화력이 부족했던 거죠.", "timestamp": 85.0, "turn_id": "t008"}
+{"speaker": "interviewer", "text": "아까 시간은 안 본다고 하셨는데, 신입 교육할 땐 어떻게 가르치세요?", "timestamp": 110.0, "turn_id": "t009"}
+{"speaker": "expert", "text": "아 신입한테는 오히려 시간표부터 외우게 해요. 감이 없으니까 일단 숫자로 시작해야죠. 그건 좀 모순 같긴 한데.", "timestamp": 118.0, "turn_id": "t010"}

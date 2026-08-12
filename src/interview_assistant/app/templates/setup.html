@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="setup-layout">
+<div class="setup">
+  <h1>AInterview Assistant</h1>
+  {% if error %}<p class="error">{{ error }}</p>{% endif %}
+  {% if info %}<p class="info">{{ info }}</p>{% endif %}
+  <form method="post" action="{{ url_for('create_session') }}">
+    <label>
+      세션 이름
+      <input type="text" name="domain" value="{{ schema_domain if schema_domain is defined else '' }}">
+    </label>
+
+    <fieldset class="input-mode">
+      <legend>스키마 사용 여부</legend>
+      <label class="radio-label">
+        <input type="radio" name="use_schema" value="yes" id="use-schema-yes"
+               {% if not form or form.use_schema != 'no' %}checked{% endif %}>
+        스키마 사용 — 항목별로 커버리지(다룸/미다룸/모순)를 추적합니다
+      </label>
+      <label class="radio-label">
+        <input type="radio" name="use_schema" value="no" id="use-schema-no"
+               {% if form and form.use_schema == 'no' %}checked{% endif %}>
+        스키마 없이 진행 — 자유 형식 인터뷰(커버리지 추적 없음)
+      </label>
+    </fieldset>
+
+    <fieldset class="schema-editor" id="schema-editor">
+      <legend>인터뷰 스키마 (필수 확인 항목 목록)</legend>
+      {% set current_schema_path = schema_path_value if schema_path_value is defined else (form.schema_path if form else default_schema_path) %}
+      <label class="schema-path-label">
+        스키마 파일
+        <span class="schema-path-row">
+          <select name="schema_path" onchange="document.getElementById('load-schema-submit').click()">
+            {% if available_schema_files %}
+              <option value="" {% if not current_schema_path %}selected{% endif %}>선택 안 함</option>
+              {% for f in available_schema_files %}
+                <option value="{{ f }}" {% if f|string == current_schema_path %}selected{% endif %}>{{ f.name }}</option>
+              {% endfor %}
+            {% else %}
+              <option value="" disabled selected>(schemas/ 폴더에 스키마 파일이 없습니다)</option>
+            {% endif %}
+          </select>
+          <button type="submit" id="load-schema-submit" formaction="{{ url_for('load_schema_route') }}" hidden></button>
+        </span>
+        <p class="hint">새 스키마가 필요하면 <code>schemas/</code> 폴더에 JSON 파일을 추가하고 새로고침하세요.</p>
+      </label>
+
+      <div id="schema-items">
+        {% for item in (schema_items if schema_items is defined else []) %}
+          <div class="schema-item-row">
+            <input type="text" name="item_label[]" placeholder="항목 이름" value="{{ item.label }}">
+            <input type="text" name="item_criteria[]" placeholder="기준(무엇을 확인해야 하는지)" value="{{ item.criteria }}">
+            <button type="button" class="remove-item-btn">삭제</button>
+          </div>
+        {% endfor %}
+      </div>
+      <div class="schema-editor-actions">
+        <button type="button" id="add-item-btn">+ 항목 추가</button>
+        <button type="submit" formaction="{{ url_for('save_schema_route') }}">스키마 저장</button>
+      </div>
+      <p class="hint">편집한 내용은 "스키마 저장"을 눌러야 반영됩니다 — "세션 시작"은 마지막으로 저장된 파일 내용으로 진행됩니다.</p>
+    </fieldset>
+
+    <div class="setup-grid">
+      <div class="setup-grid-header">인터뷰 목적</div>
+      <div class="setup-grid-header">인터뷰 대상 프로필</div>
+      <div class="setup-grid-header">포커스 노트</div>
+
+      <textarea name="interview_goal" rows="4">{{ form.interview_goal if form else '' }}</textarea>
+      <textarea name="expert_profile" rows="4">{{ form.expert_profile if form else '' }}</textarea>
+      <textarea name="focus_notes" rows="4">{{ form.focus_notes if form else '' }}</textarea>
+    </div>
+
+    <fieldset class="input-mode">
+      <legend>입력 방식</legend>
+      <label class="radio-label">
+        <input type="radio" name="input_mode" value="audio_file"
+               {% if form and form.input_mode == 'audio_file' %}checked{% endif %}>
+        오디오 파일 테스트 (Deepgram, 로컬 파일 경로)
+      </label>
+      {% set current_audio_path = form.audio_path if form else '' %}
+      <select name="audio_path" class="audio-path-select">
+        {% if available_audio_files %}
+          <option value="" {% if not current_audio_path %}selected{% endif %}>선택 안 함</option>
+          {% for f in available_audio_files %}
+            <option value="{{ f }}" {% if f|string == current_audio_path %}selected{% endif %}>{{ f.name }}</option>
+          {% endfor %}
+        {% else %}
+          <option value="" disabled selected>(audio/ 폴더에 오디오 파일이 없습니다)</option>
+        {% endif %}
+      </select>
+      <label class="radio-label">
+        <input type="radio" name="input_mode" value="live_mic"
+               {% if not form or form.input_mode == 'live_mic' %}checked{% endif %}>
+        실시간 마이크 (Deepgram)
+      </label>
+    </fieldset>
+
+    <fieldset class="input-mode">
+      <legend>실시간 구조화 주기</legend>
+      <label class="radio-label">
+        <input type="radio" name="structuring_interval_seconds" value="1"
+               {% if form and form.structuring_interval_seconds == '1' %}checked{% endif %}>
+        1초
+      </label>
+      <label class="radio-label">
+        <input type="radio" name="structuring_interval_seconds" value="5"
+               {% if not form or form.structuring_interval_seconds == '5' %}checked{% endif %}>
+        5초 (기본값)
+      </label>
+      <label class="radio-label">
+        <input type="radio" name="structuring_interval_seconds" value="10"
+               {% if form and form.structuring_interval_seconds == '10' %}checked{% endif %}>
+        10초
+      </label>
+    </fieldset>
+
+    <button type="submit">세션 시작</button>
+  </form>
+</div>
+
+<aside class="session-list-panel">
+  <h2>지난 세션</h2>
+  {% if sessions %}
+    <ul class="session-list">
+      {% for s in sessions %}
+        <li class="session-list-item">
+          <a href="{{ url_for('session_detail', session_id=s.session_id) }}">
+            <span class="session-domain">{{ s.domain }}</span>
+            <span class="session-meta-line">
+              {{ s.started_at[:19].replace('T', ' ') }} · {{ '스키마 사용' if s.has_schema else '자유 형식' }}
+            </span>
+          </a>
+          <form method="post" action="{{ url_for('delete_session_route', session_id=s.session_id) }}"
+                class="inline-form"
+                onsubmit="return confirm('이 세션을 삭제할까요? 되돌릴 수 없습니다.');">
+            <button type="submit" class="session-delete-btn" title="세션 삭제">✕</button>
+          </form>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="empty">아직 지난 세션이 없습니다.</p>
+  {% endif %}
+</aside>
+</div>
+<script>
+  function attachRemoveHandler(btn) {
+    btn.addEventListener("click", function () {
+      btn.closest(".schema-item-row").remove();
+    });
+  }
+  document.querySelectorAll(".remove-item-btn").forEach(attachRemoveHandler);
+
+  var addItemBtn = document.getElementById("add-item-btn");
+  if (addItemBtn) {
+    addItemBtn.addEventListener("click", function () {
+      var row = document.createElement("div");
+      row.className = "schema-item-row";
+      row.innerHTML =
+        '<input type="text" name="item_label[]" placeholder="항목 이름">' +
+        '<input type="text" name="item_criteria[]" placeholder="기준(무엇을 확인해야 하는지)">' +
+        '<button type="button" class="remove-item-btn">삭제</button>';
+      document.getElementById("schema-items").appendChild(row);
+      attachRemoveHandler(row.querySelector(".remove-item-btn"));
+      row.querySelector("input").focus();
+    });
+  }
+
+  var schemaEditor = document.getElementById("schema-editor");
+  var useSchemaNoRadio = document.getElementById("use-schema-no");
+  function updateSchemaEditorState() {
+    schemaEditor.classList.toggle("schema-editor-disabled", useSchemaNoRadio.checked);
+  }
+  document.querySelectorAll('input[name="use_schema"]').forEach(function (r) {
+    r.addEventListener("change", updateSchemaEditorState);
+  });
+  updateSchemaEditorState();
+</script>
+{% endblock %}

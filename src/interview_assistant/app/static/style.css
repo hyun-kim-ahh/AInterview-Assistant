@@ -1,0 +1,752 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  color: #222;
+  background: #f7f7f8;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.setup-layout {
+  max-width: 1200px;
+  margin: 3rem auto;
+  padding: 0 2rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 1.5rem;
+}
+
+.setup {
+  flex: 3;
+  padding: 2rem;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+.session-list-panel {
+  flex: 1;
+  min-width: 220px;
+  padding: 1.5rem;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+.session-list-panel h2 {
+  margin-top: 0;
+  font-size: 1.1rem;
+}
+
+.session-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.session-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #eee;
+}
+
+.session-list-item:last-child {
+  border-bottom: none;
+}
+
+.session-list-item a {
+  display: block;
+  flex: 1;
+  min-width: 0;
+  padding: 0.6rem 0;
+  text-decoration: none;
+  color: inherit;
+}
+
+.session-delete-btn {
+  flex-shrink: 0;
+  padding: 0.3rem 0.5rem;
+  font-size: 0.75rem;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: #a0aec0;
+  cursor: pointer;
+}
+
+.session-delete-btn:hover {
+  background: #c53030;
+  color: #fff;
+}
+
+.session-domain {
+  display: block;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.session-meta-line {
+  display: block;
+  color: #718096;
+  font-size: 0.8rem;
+}
+
+.setup label {
+  display: block;
+  margin-bottom: 1rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.setup input, .setup textarea, .setup select {
+  display: block;
+  width: 100%;
+  margin-top: 0.25rem;
+  padding: 0.5rem;
+  font-size: 0.95rem;
+  font-family: inherit;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.setup-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.setup-grid-header {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.setup-grid input, .setup-grid textarea {
+  width: 100%;
+  padding: 0.5rem;
+  font-size: 0.9rem;
+  font-family: inherit;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  resize: vertical;
+}
+
+.setup button, .bottom-bar button {
+  padding: 0.6rem 1.2rem;
+  font-size: 0.95rem;
+  border: none;
+  border-radius: 4px;
+  background: #2b6cb0;
+  color: #fff;
+  cursor: pointer;
+}
+
+.setup button:hover, .bottom-bar button:hover {
+  background: #1a4e8a;
+}
+
+.error {
+  color: #c53030;
+  font-weight: 600;
+}
+
+.info {
+  color: #2f855a;
+  font-weight: 600;
+}
+
+.schema-editor {
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.schema-editor legend {
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: 0 0.3rem;
+}
+
+.schema-path-label {
+  margin-bottom: 0.75rem;
+}
+
+.schema-path-row {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.schema-path-row select {
+  flex: 1;
+  margin-top: 0;
+}
+
+.schema-path-row button {
+  flex-shrink: 0;
+}
+
+.schema-item-row {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.schema-item-row input {
+  flex: 1;
+  margin-top: 0;
+}
+
+.schema-item-row .remove-item-btn {
+  flex-shrink: 0;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.8rem;
+  border: none;
+  border-radius: 4px;
+  background: #c53030;
+  color: #fff;
+  cursor: pointer;
+}
+
+.schema-editor-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+#add-item-btn {
+  background: #718096;
+}
+
+.hint {
+  color: #718096;
+  font-size: 0.8rem;
+  font-style: italic;
+  margin: 0.5rem 0 0;
+}
+
+.input-mode {
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.input-mode legend {
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: 0 0.3rem;
+}
+
+.radio-label {
+  display: block;
+  font-weight: 400;
+  margin-bottom: 0.4rem;
+}
+
+.radio-label input {
+  display: inline;
+  width: auto;
+  margin-right: 0.4rem;
+}
+
+select.audio-path-select {
+  /* 요소 타입을 셀렉터에 포함해 ".setup select"(width: 100%)보다 우선순위를
+     같게 맞춘다 — 그래야 이 규칙이 소스 순서상 나중에 선언된 대로 실제로
+     이긴다. 전에는 .setup select의 width: 100%가 이겨서 margin-left(들여쓰기)만
+     적용되고 너비는 그대로 100%라 오른쪽으로 1.6rem만큼 튀어나와 보였다. */
+  margin: -0.2rem 0 0.6rem 1.6rem;
+  width: calc(100% - 1.6rem);
+}
+
+.auto-ingest-status {
+  color: #2f855a;
+  font-weight: 600;
+  align-self: center;
+}
+
+.schema-editor-disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.no-schema-badge {
+  font-size: 0.8rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 12px;
+  background: #4a5568;
+  color: #fff;
+}
+
+.top-bar {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+  padding: 0.75rem 1.5rem;
+  background: #2d3748;
+  color: #fff;
+  font-size: 0.9rem;
+}
+
+.top-bar .domain {
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.audio-player-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 1.5rem;
+  background: #1a202c;
+}
+
+.audio-player-bar audio {
+  height: 32px;
+}
+
+.audio-autoplay-hint {
+  color: #f6ad55;
+  font-size: 0.82rem;
+}
+
+.back-link {
+  margin-left: auto;
+  color: #fff;
+  text-decoration: none;
+  font-size: 0.85rem;
+}
+
+.back-link:hover {
+  text-decoration: underline;
+}
+
+.main {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+.transcript-pane {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem 1.5rem;
+  background: #fff;
+}
+
+.structure-pane {
+  flex: 3;
+  overflow-y: auto;
+  padding: 1rem 1.5rem;
+  background: #eef1f6;
+  border-left: 1px solid #ddd;
+}
+
+.structure-pane h2 {
+  margin-top: 0;
+}
+
+.structure-pane .badges {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
+}
+
+.availability-badge {
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.2rem 0.6rem;
+  border-radius: 12px;
+  background: #cbd5e0;
+  color: #2d3748;
+}
+
+.contradiction-count {
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0.2rem 0.6rem;
+  border-radius: 12px;
+  background: #c53030;
+  color: #fff;
+}
+
+.structure-item-list {
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0;
+}
+
+.structure-item {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 0.85rem;
+}
+
+.structure-item:last-child {
+  border-bottom: none;
+}
+
+.structure-item-header {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.3rem;
+}
+
+.item-label {
+  font-weight: 600;
+}
+
+.contradiction-note {
+  color: #c53030;
+  font-size: 0.8rem;
+  margin: 0.2rem 0 0.4rem 0.75rem;
+}
+
+.unclassified-section h3 {
+  font-size: 0.9rem;
+  margin: 0.5rem 0 0.4rem;
+  color: #4a5568;
+}
+
+.status-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 0.15rem 0.5rem;
+  border-radius: 10px;
+  color: #fff;
+  white-space: nowrap;
+}
+
+.status-uncovered .status-badge {
+  background: #a0aec0;
+}
+
+.status-partial .status-badge {
+  background: #b7791f;
+}
+
+.status-covered .status-badge {
+  background: #2f855a;
+}
+
+.item-contradiction-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #c53030;
+  margin-left: 0.4rem;
+}
+
+.question-pane {
+  flex: 2;
+  overflow-y: auto;
+  padding: 1rem 1.5rem;
+  background: #f0f2f5;
+  border-left: 1px solid #ddd;
+}
+
+.question-pane-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.question-pane-header h2 {
+  margin: 0;
+}
+
+.question-pane-title {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+#ask-button {
+  padding: 0.3rem 0.7rem;
+  font-size: 0.8rem;
+  border: none;
+  border-radius: 12px;
+  background: #2b6cb0;
+  color: #fff;
+  cursor: pointer;
+}
+
+#ask-button:hover {
+  background: #1a4e8a;
+}
+
+#ask-button:disabled {
+  background: #a0aec0;
+  cursor: not-allowed;
+}
+
+#toggle-kept-btn {
+  padding: 0.3rem 0.7rem;
+  font-size: 0.8rem;
+  border: 1px solid #2b6cb0;
+  border-radius: 12px;
+  background: #fff;
+  color: #2b6cb0;
+  cursor: pointer;
+}
+
+.kept-questions-panel {
+  margin: 0.75rem 0 1rem;
+  padding: 0.5rem 0.75rem;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+}
+
+.kept-questions-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.kept-question-item {
+  padding: 0.4rem 0;
+  border-bottom: 1px solid #eee;
+  font-size: 0.9rem;
+  border-left: 3px solid #999;
+  padding-left: 0.5rem;
+}
+
+.kept-question-item:last-child {
+  border-bottom: none;
+}
+
+.kept-question-item .card-type {
+  margin-right: 0.5rem;
+}
+
+.turn {
+  margin: 0 0 0.75rem;
+  line-height: 1.5;
+}
+
+.turn.recent {
+  background: #fff9db;
+  border-radius: 4px;
+  padding: 0.4rem 0.5rem;
+}
+
+.turn-id {
+  color: #718096;
+  font-size: 0.8rem;
+  margin-right: 0.4rem;
+}
+
+.corrected-badge {
+  margin-left: 0.3rem;
+  font-size: 0.8rem;
+  color: #b7791f;
+  cursor: help;
+}
+
+.overview-box {
+  margin-bottom: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  background: #ebf4ff;
+  border: 1px solid #bee3f8;
+  border-radius: 6px;
+}
+
+.summarizing-box {
+  color: #718096;
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+.overview-box h3 {
+  margin: 0 0 0.3rem;
+  font-size: 0.85rem;
+  color: #2b6cb0;
+}
+
+.item-summary {
+  margin: 0.3rem 0 0.5rem;
+  padding: 0.5rem 0.6rem 0.5rem 0.9rem;
+  background: #f7fafc;
+  border-left: 3px solid #2b6cb0;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+/* 종합 정리(overview-content)/섹션 요약(item-summary)은 이제 LLM이 쓴 마크다운을
+   그대로 HTML로 렌더링한 결과라 임의의 헤딩/목록/표/문단이 들어올 수 있다 —
+   박스 안에서 자연스럽게 보이도록 공통 규칙으로 다듬는다. */
+.overview-content > *:first-child,
+.item-summary > *:first-child {
+  margin-top: 0;
+}
+
+.overview-content > *:last-child,
+.item-summary > *:last-child {
+  margin-bottom: 0;
+}
+
+.overview-content h1, .overview-content h2, .overview-content h3, .overview-content h4,
+.item-summary h1, .item-summary h2, .item-summary h3, .item-summary h4 {
+  font-size: 0.9rem;
+  margin: 0.6rem 0 0.3rem;
+  color: #2b6cb0;
+}
+
+.overview-content p, .item-summary p {
+  margin: 0.3rem 0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.overview-content ul, .overview-content ol,
+.item-summary ul, .item-summary ol {
+  margin: 0.3rem 0;
+  padding-left: 1.4rem;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.overview-content li, .item-summary li {
+  margin-bottom: 0.2rem;
+}
+
+.overview-content table, .item-summary table {
+  display: block;
+  overflow-x: auto;
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.5rem 0;
+  font-size: 0.8rem;
+}
+
+.overview-content th, .overview-content td,
+.item-summary th, .item-summary td {
+  border: 1px solid #cbd5e0;
+  padding: 0.3rem 0.5rem;
+  text-align: left;
+}
+
+.overview-content th, .item-summary th {
+  background: #edf2f7;
+}
+
+.view-report-link {
+  margin-left: auto;
+  color: #fff;
+  text-decoration: none;
+  font-size: 0.85rem;
+}
+
+.view-report-link:hover {
+  text-decoration: underline;
+}
+
+.empty {
+  color: #a0aec0;
+  font-style: italic;
+}
+
+.card {
+  padding: 0.75rem;
+  margin-bottom: 0.75rem;
+  border-radius: 6px;
+  border-left: 4px solid #999;
+  background: #fff;
+}
+
+/* 새로 생성된 추천 질문 카드가 배경 자동 갱신으로 조용히 나타나지 않도록,
+   등장 시 한 번 반짝여 눈에 띄게 한다(session.html의 rebuildQuestionPanel에서 부여). */
+@keyframes card-flash {
+  0% { background: #fff3b0; }
+  100% { background: #fff; }
+}
+
+.card-flash {
+  animation: card-flash 1s ease-out;
+}
+
+/* "채택" 클릭 즉시 효과 — /adopt가 fetch로 바뀌면서 페이지 리로드가 없어져
+   화면에 아무 변화가 없어 보이는 문제(킵한 질문 패널을 따로 열어야만 확인
+   가능)를 보완한다(session.html의 .card-form submit 핸들러에서 부여). */
+@keyframes card-adopted-flash {
+  0% { background: #d4f7d4; }
+  100% { background: #fff; }
+}
+
+.card-adopted-flash {
+  animation: card-adopted-flash 1s ease-out;
+}
+
+.card-type {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  margin-bottom: 0.3rem;
+  color: #555;
+}
+
+.card-text {
+  margin: 0;
+  line-height: 1.4;
+}
+
+.card-form textarea {
+  display: block;
+  width: 100%;
+  margin: 0 0 0.5rem;
+  padding: 0.4rem;
+  font-size: 0.9rem;
+  font-family: inherit;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  resize: vertical;
+  overflow-y: hidden;
+}
+
+.card-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.card-actions button {
+  padding: 0.3rem 0.8rem;
+  font-size: 0.85rem;
+  border: none;
+  border-radius: 4px;
+  background: #2b6cb0;
+  color: #fff;
+  cursor: pointer;
+}
+
+.type-probe { border-left-color: #2b6cb0; }
+.type-contradiction { border-left-color: #c53030; }
+.type-gap { border-left-color: #b7791f; }
+.type-expand { border-left-color: #2f855a; }
+
+.bottom-bar {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  background: #fff;
+  border-top: 1px solid #ddd;
+}
+
+.inline-form {
+  display: inline;
+}
+
+.bottom-bar button:disabled {
+  background: #a0aec0;
+  cursor: not-allowed;
+}

@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="top-bar">
+  <span class="domain">{{ meta.domain }}</span>
+  <span class="session-meta-line">
+    {{ meta.started_at[:19].replace('T', ' ') }} · {{ '스키마 사용' if meta.has_schema else '자유 형식' }}
+  </span>
+  <a href="{{ url_for('index') }}" class="back-link">← 목록으로</a>
+</div>
+
+<div class="main">
+  <div class="transcript-pane">
+    <h2>전사</h2>
+    {% for event in transcript %}
+      <p class="turn">
+        <span class="turn-id">[{{ event.turn_id }} · {{ event.speaker.value if event.speaker else "?" }}]</span>
+        {{ event.text }}
+        {% if event.corrected %}<span class="corrected-badge" title="전사 교정됨">✎</span>{% endif %}
+      </p>
+    {% else %}
+      <p class="empty">전사 기록이 없습니다.</p>
+    {% endfor %}
+  </div>
+
+  <div class="structure-pane">
+    <h2>정리</h2>
+    {% if structured_state %}
+      {% if structured_state.overview %}
+        <div class="overview-box">
+          <h3>종합 정리</h3>
+          <div class="overview-content">{{ structured_state.overview | markdown | safe }}</div>
+        </div>
+      {% endif %}
+      {% if structured_state.schema_items %}
+        <ul class="structure-item-list">
+          {% for item in structured_state.schema_items %}
+            <li class="structure-item status-{{ item.status }}">
+              <div class="structure-item-header">
+                <span class="item-label">{{ item.label }}</span>
+                <span class="status-badge">{{ item.status }}</span>
+                {% if item.contradictions %}<span class="item-contradiction-badge">⚠ 모순</span>{% endif %}
+              </div>
+              {% if item.summary %}
+                <div class="item-summary">{{ item.summary | markdown | safe }}</div>
+              {% else %}
+                <p class="empty">아직 내용 없음</p>
+              {% endif %}
+              {% for contra in item.contradictions %}
+                <p class="contradiction-note">⚠ {{ contra.with_ref }}와 상충 — {{ contra.note }}</p>
+              {% endfor %}
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="empty">아직 정리된 내용이 없습니다.</p>
+      {% endif %}
+    {% else %}
+      <p class="empty">구조화 결과가 없습니다.</p>
+    {% endif %}
+  </div>
+
+  <div class="question-pane">
+    <h2>채택된 질문</h2>
+    {% if adoptions %}
+      <ul class="kept-questions-list">
+        {% for a in adoptions %}
+          <li class="kept-question-item type-{{ a.question_type.value }}">
+            <span class="card-type">{{ a.question_type.value }}</span>
+            {{ a.edited_text if a.action.value == 'edited' else a.question_text }}
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="empty">채택된 질문이 없습니다.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
