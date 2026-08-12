@@ -12,15 +12,16 @@ source .venv/bin/activate
 pip install -e ".[dev]"
 
 cp .env.example .env
-# .env에 OPENROUTER_API_KEY를 채워야 LLM 호출(구조화·질문생성)이 동작합니다.
-# 실제 오디오(오디오 파일 테스트/실시간 마이크)를 쓰려면 DEEPGRAM_API_KEY도 필요합니다.
-# 텍스트만으로 파이프라인을 확인하려면(input_mode=fixture) 둘 다 없어도 대부분 동작합니다.
+# OPENROUTER_API_KEY는 항상 필요합니다 — 구조화·질문생성 LLM 호출에 씀.
+# 웹 화면에서 실제로 세션을 시작하려면 DEEPGRAM_API_KEY도 필요합니다 —
+# 화면에서 고를 수 있는 입력 방식("오디오 파일 테스트"/"실시간 마이크") 둘 다
+# Deepgram STT를 씁니다.
 
 python scripts/run_app.py
-# http://127.0.0.1:5001 접속
+# http://127.0.0.1:5001 접속 후 인터뷰 스키마(선택)와 입력 방식을 고르고 세션 시작
 ```
 
-테스트는 `fixtures/`의 예시 스키마·가짜 전사로 돕니다(실제 인터뷰나 API 키 없이도 대부분 실행 가능):
+테스트는 실제 LLM/STT 호출을 대부분 가짜로 대체해서 돌아가므로, API 키 없이도 실행됩니다:
 
 ```bash
 pytest
